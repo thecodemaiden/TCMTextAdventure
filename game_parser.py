@@ -2,9 +2,9 @@ from game_constants import *
 
 alias_dir = {"forward": DIR_FORWARD, "ahead": DIR_FORWARD, "back": DIR_BACKWARD, "behind": DIR_BACKWARD, "left": DIR_LEFT, "right": DIR_RIGHT, "up": DIR_UP, "down": DIR_DOWN, "north": DIR_NORTH, "n": DIR_NORTH, "south": DIR_SOUTH, "s": DIR_SOUTH, "east": DIR_EAST, "e": DIR_EAST, "west": DIR_WEST, "w": DIR_WEST}
 
-ignore_words = ["the", "to", "at", "and"]
+ignore_words = ["the", "to", "at", "and", "with", "a", "an"]
 
-commands = ["wait", "look", "get", "take", "drop", "leave", "use", "push", "pull", "examine", "open", "close", "smell", "go", "move", "turn", "face"]
+commands = ["wait", "look", "get", "take", "drop", "leave", "pull", "examine", "open", "close", "smell", "go", "move", "turn", "face", "quit"]
 
 # parser
 PARSE_SUBJECTS = "subjects"
@@ -23,8 +23,6 @@ ACTION_DROP = "drop"
 ACTION_TURN = "turn"
 ACTION_OPEN = "open"
 ACTION_CLOSE = "close"
-ACTION_PUSH = "push"
-ACTION_PULL = "pull"
 ACTION_MOVE = "move"
 ACTION_USE = "use"
 
@@ -39,11 +37,10 @@ PARSE_ITEM = "expecting item"
 PARSE_LOOK = "look expression"
 PARSE_MOVE = "going somewhere"
 PARSE_TURN = "reorienting player"
-PARSE_EAT = "eat" # consume everything else - don't error - not player eat!
 PARSE_ANY = "fallback"
 
 
-# {state: {input:(output,next_state)} 
+# {state: {input:(output,next_state)}} 
 transitions = {}
 transitions[PARSE_START] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_DONE),
                             "wait":((None, ACTION_WAIT), PARSE_DONE),
@@ -53,9 +50,7 @@ transitions[PARSE_START] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_D
                             "drop":((PARSE_ERROR, ACTION_DROP), PARSE_ITEM),
                             "leave":((PARSE_ERROR, ACTION_DROP), PARSE_ITEM),
                             "use":((PARSE_ERROR, ACTION_USE), PARSE_ITEM),
-                            "push":((PARSE_ERROR, ACTION_PUSH), PARSE_ITEM),
-                            "pull":((PARSE_ERROR, ACTION_PULL), PARSE_ITEM),
-                            "examine":((None, ACTION_EXAMINE), PARSE_LOOK),
+                            "examine":((PARSE_ERROR, ACTION_EXAMINE), PARSE_LOOK),
                             "open":((PARSE_ERROR, ACTION_OPEN), PARSE_ITEM),
                             "close":((PARSE_ERROR, ACTION_CLOSE), PARSE_ITEM),
                             "smell":((ENV_SMELL, ACTION_EXAMINE), PARSE_DONE),
@@ -66,12 +61,12 @@ transitions[PARSE_START] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_D
 
 transitions[PARSE_MOVE] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_DONE)}
 transitions[PARSE_LOOK] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_EXAMINE), PARSE_DONE),
-                           PARSE_USE_NOUN:((PARSE_USE_NOUN, ACTION_EXAMINE), PARSE_DONE)}
+                           PARSE_USE_NOUN:((PARSE_USE_NOUN, ACTION_EXAMINE), PARSE_ITEM)}
 # make lists of items
 transitions[PARSE_ITEM] = {PARSE_USE_NOUN:((PARSE_USE_NOUN, PARSE_UNCHANGED), PARSE_ITEM)}
 transitions[PARSE_TURN] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_TURN), PARSE_DONE)}
 
-transitions[PARSE_EAT] = {PARSE_ANY:((PARSE_UNCHANGED, PARSE_UNCHANGED), PARSE_EAT)}
+transitions[PARSE_IGNORE] = {PARSE_ANY:((PARSE_UNCHANGED, PARSE_UNCHANGED), PARSE_IGNORE)}
 
 class ParserFSM(object):
     
@@ -105,16 +100,12 @@ class ParserFSM(object):
                 if (state_subj != PARSE_UNCHANGED):
                     if state_subj == PARSE_USE_DIR:
                         dir = alias_dir[word]
-                        self.output[PARSE_SUBJECTS] = dir 
+                        self.output[PARSE_SUBJECTS] = [dir] 
                     elif state_subj == PARSE_USE_NOUN:
-                        if word in object_names:
-                            subjs = self.output[PARSE_SUBJECTS]
-                            if isinstance(subjs, list):
-                                subjs.append(word)
-                            else:
-                                self.output[PARSE_SUBJECTS] = [word]
+                        subjs = self.output[PARSE_SUBJECTS]
+                        subjs.append(word)
                     else:
-                        self.output[PARSE_SUBJECTS] = (state_subj)
+                        self.output[PARSE_SUBJECTS] = [state_subj]
             except (KeyError, TypeError):
                 self.state = PARSE_ERROR #straight to error state, don't do transition
 

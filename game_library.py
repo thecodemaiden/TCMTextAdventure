@@ -34,12 +34,16 @@ class Player(object):
       	l = [x for x in self.inventory if x.name == OBJ_COMPASS]
         return len(l) > 0
 
+    def enter(self, room, monster):
+        self.current_room = room
+        room.onEntered(self, monster)
+
 
 class Room(object):
-    def __init__(self):
+    def __init__(self, name):
         self.objects = []
         self.exits = {}
-        self.name = "room"
+        self.name = name
         self.dir_preambles = {DIR_NORTH: "To the north is the ", DIR_SOUTH: "To the south is the ",
 			      DIR_WEST: "To the west is the ", DIR_EAST: "To the east is the ",
 			      DIR_UP: "Above you is the ", DIR_DOWN: "Below you is the",
@@ -49,46 +53,64 @@ class Room(object):
     def list_exits(self, use_relative=True, facing=None, include_updown=True):
         text_list = []
         look_directions = compass_directions[:]
-	if include_updown:
-	    look_directions += [DIR_UP, DIR_DOWN]
-	for direction in look_directions:
-	    try:
-		room_name = self.exits[direction].name
-		if use_relative:
-		    direction = compass_to_player(direction, facing)
-		text_list.append(self.dir_preambles[direction]+room_name+".")
-	    except KeyError:
-		pass
-	if len(text_list) > 0:
-	    return " ".join(text_list)
-	else:
-	    return "There are no exits. You are trapped."
+        if include_updown:
+            look_directions += [DIR_UP, DIR_DOWN]
+        for direction in look_directions:
+            desc = self.get_exit_descr(direction, use_relative, facing)
+            if desc is not None:
+                text_list.append(desc)
+        if len(text_list) > 0:
+            return " ".join(text_list)
+        else:
+            return "There are no exits. You are trapped."
+
+    def get_exit_descr(self, direction, use_relative, facing):
+        s = None
+        try:
+            room_name = self.exits[direction].name
+            if use_relative:
+                direction = compass_to_player(direction, facing)
+            s = (self.dir_preambles[direction]+room_name+".")
+        except KeyError:
+            pass
+        return s
 
     def smell_description(self):
-	if (gas_conc > 0.1):
-	    return "You smell propane, but it's not clear where it's coming from."
-	else:
-	    return "You smell nothing."
+        if (gas_conc > 1.5):
+            return "The smell of propane is almost overwhelming now."
+        elif (gas_conc > 0.15):
+            return "You smell propane, but it's not clear where it's coming from."
+        else:
+            return "You smell nothing."
+
+    def place_object(self, obj):
+        if obj.current_room is not None:
+            try:
+                obj.current_room.objects.remove(obj)
+            except ValueError:
+                pass
+        obj.current_room = self
+        self.objects.append(obj)
 
     def get_description(self, aspect, player, monster):
         #player is optional, mostly for when we 'gain knowledge'
         #monster lets us do noises based on monster positions
 
-	s = None
+        s = None
 
-	if aspect == ENV_APPEAR:
-	    s = "You are in the "+self.name +"."
-	    s += (" You see here: "+object_list_text(self.objects)+".")
-	    if monster.is_nearby(player):
-		s += " You hear a faint scratching."
-	    if gas_conc > 0.1:
-		s += " You smell something strange."
-	elif aspect == ENV_SMELL:
-	    s = self.smell_description()
-	elif aspect == ENV_ABOVE:
-	    s = "There is nothing interesting about the ceiling."
-	elif aspect == ENV_BELOW:
-	    s = "There is nothing interesting about the floor."
+        if aspect == ENV_APPEAR:
+            s = "You are in the "+self.name +"."
+            s += (" You see here: "+object_list_text(self.objects)+".")
+            if monster.is_nearby(player):
+                s += " You hear a faint scratching."
+            if gas_conc > 0.1:
+                s += " You smell something strange."
+        elif aspect == ENV_SMELL:
+            s = self.smell_description()
+        elif aspect == ENV_ABOVE:
+            s = "There is nothing interesting about the ceiling."
+        elif aspect == ENV_BELOW:
+            s = "There is nothing interesting about the floor."
         return s
 
     def onEntered(self, player, monster):
@@ -97,20 +119,23 @@ class Room(object):
 		
 
 class Item(object):
-    def __init__(self):
+    def __init__(self, name):
         self.in_inv = False
         self.current_room = None        
-        self.name = "object"
+        self.name = name
         self.is_portable = True
         self.is_open = False
         self.contents = []
 
-    def use(self, player, others=[]):
+    def use(self, player=None, others=[]):
         # args are other objects used with it
         pass 
 
-    def describe(self):
-        display("You see "+object_list_text([self])+". "+self.descr())
+    def describe(self, player=None):
+        if player is not None and player.current_room != self.current_room:
+            display("You don't see any "+self.name+" here.")
+        else:
+            display("You see "+object_list_text([self])+". "+self.descr())
 
     def descr(self):
         return "There is nothing special about this "+self.name+"."
@@ -118,10 +143,21 @@ class Item(object):
     def open(self, player=None):
         display("You can't open that!")
 
+    def close(self, player=None):
+        display("You can't close that!")
+
     def pickup(self, player):
+        if player.current_room != self.current_room:
+            display("You don't see any "+self.name+" here.")
+            return
+
         if self.is_portable:
             player.inventory.append(self)
-	    display("You pick up the "+self.name)
+            display("You pick up the "+self.name+".")
+            try:
+                self.current_room.objects.remove(self)
+            except ValueError:
+                pass
             self.current_room = None
             self.in_inv = True 
         else:
@@ -130,7 +166,7 @@ class Item(object):
     def drop(self, player):
         try:
             player.inventory.remove(self)
-            self.current_room = player.current_room
+            player.current_room.place_object(self)
             self.in_inv = False
         except ValueError:
             display("You weren't carrying that!")
