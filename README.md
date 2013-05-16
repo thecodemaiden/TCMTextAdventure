@@ -10,3 +10,7 @@ FAQ:
 Q: Why didn't you use camelCase?
   
 A: I started out doing old-style underscore separated variable names, and now I'm too lazy to switch style.
+
+Q: How do I play?
+  
+A: python txt_adv.py - Make sure all the other files are in the same directory.

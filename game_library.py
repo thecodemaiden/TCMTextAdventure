@@ -24,11 +24,11 @@ class Player(object):
     
     def die_now(self, death_message):
         display(death_message)
-        player_dead = True
+        self.is_dead = True
 
     def escape(self, escape_message):
         display(escape_message)
-        player_escaped = True
+        self.is_escaped = True
 
     def has_compass(self):
       	l = [x for x in self.inventory if x.name == OBJ_COMPASS]
@@ -76,7 +76,7 @@ class Room(object):
         return s
 
     def smell_description(self):
-        if (gas_conc > 1.5):
+        if (gas_conc >= 1.5):
             return "The smell of propane is almost overwhelming now."
         elif (gas_conc > 0.15):
             return "You smell propane, but it's not clear where it's coming from."
@@ -114,13 +114,14 @@ class Room(object):
         return s
 
     def onEntered(self, player, monster):
+        print self.objects
         display(self.get_description(ENV_APPEAR, player, monster))
         display(self.list_exits(not player.has_compass(), player.facing, player.found_trapdoor))
 		
 
 class Item(object):
     def __init__(self, name):
-        self.in_inv = False
+        self.in_inv = False # not really necessary, but I'll leave it for now
         self.current_room = None        
         self.name = name
         self.is_portable = True
@@ -132,7 +133,7 @@ class Item(object):
         pass 
 
     def describe(self, player=None):
-        if player is not None and player.current_room != self.current_room:
+        if player is not None and player.current_room != self.current_room and not self.in_inv:
             display("You don't see any "+self.name+" here.")
         else:
             display("You see "+object_list_text([self])+". "+self.descr())

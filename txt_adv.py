@@ -1,6 +1,6 @@
 from game_library import Player, Monster, Room, Item
 from game_setup import kitchen, bathroom, bedroom, closet, attic, foyer, living_room
-from game_setup import candle, can_VC60, key, note, dresser, grindstone, lighter, cleaver, windows, right_window
+from game_setup import candle, can_VC60, key, note, dresser, grindstone, lighter, cleaver, windows, right_window, object_map
 from game_constants import *
 from game_parser import *
 
@@ -43,8 +43,8 @@ def look(dir):
         dir = ENV_BELOW
 
     if dir is None:
-        dir = ENV_APPEAR
-    if dir in env_properties:
+        player.current_room.onEntered(player, monster)
+    elif dir in env_properties:
         display(player.current_room.get_description(dir, player, monster))
     else:
         if dir in compass_directions and not player.has_compass():
@@ -58,10 +58,6 @@ def look(dir):
                 display(to_show)
         
 
-def examine(items):
-    for i in items:
-        i.describe()
-
 def turn(dir):
     if dir in compass_directions and not player.has_compass():
         display("I don't know which way that is.")
@@ -73,26 +69,38 @@ def turn(dir):
             player.facing = dir 
             display(player.current_room.list_exits(not player.has_compass(), player.facing, player.found_trapdoor))
 
+def do_tick():
+    # on every action
+    global gas_conc
+    old_conc = gas_conc
+    if windows_open:
+        gas_conc *= 0.85
+    else:
+        gas_conc *= 1.05
+    if (old_conc < 1.5 and gas_conc >= 1.5) or (old_conc >= 1.5 and gas_conc < 1.5):
+        look(ENV_SMELL)
+
+
 while 1:
     command = raw_input("> ")
     next_action = do_parse(command)
     
-    if windows_open:
-        gas_conc *= 0.85
-    else:
-        gas_conc *= 1.005
-
-    done = (command.lower() == "quit" or command.lower() == "q" or player.is_dead or player.is_escaped)
+    done = (command.lower() == "quit" or command.lower() == "q")
 
     if done:
         break
     
+
+    tick = True
     action_failed = next_action[PARSE_SUBJECTS] == PARSE_ERROR
     if action_failed:
+        tick = False
         if len(next_action[PARSE_SUGGEST]) > 0:
             display("I was fine up to '"+next_action[PARSE_SUGGEST]+"', but then you lost me.")
         else:
             display("I didn't quite get that. I can handle: "+", ".join(commands)+".")
+    elif next_action[PARSE_ACTION] is None:
+        continue
     else:
         verb = next_action[PARSE_ACTION]
         if verb == ACTION_MOVE:
@@ -100,13 +108,35 @@ while 1:
         elif verb == ACTION_TURN:
             turn(next_action[PARSE_SUBJECTS][0])
         elif verb == ACTION_EXAMINE:
-            subj = next_action[PARSE_SUBJECTS][0]
+            subj = None
+            if len(next_action[PARSE_SUBJECTS]) > 0:
+                subj = next_action[PARSE_SUBJECTS][0]
             if subj in object_names:
-                examine(next_action[PARSE_SUBJECTS])
+                for x in next_action[PARSE_SUBJECTS]:
+                    try:
+                        item = object_map[x]
+                        item.describe()    
+                    except KeyError:
+                        display("I don't see any "+x+" here.")
             else:
                 look(subj)
+        elif verb == ACTION_TAKE:
+            for x in next_action[PARSE_SUBJECTS]:
+                try:
+                    item = object_map[x]
+                    item.pickup(player)    
+                except KeyError:
+                    display("I don't see any "+x+" here.")
         else:
             print next_action
+        if tick:
+            do_tick()
+
+    if gas_conc > 2.0:
+        player.die_now("The stench of propane is overwhelming. Your vision spins, and you fall to the ground, gasping for air.")
+
+    if player.is_dead or player.is_escaped:
+        break
 
 
 if player.is_dead:

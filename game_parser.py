@@ -4,7 +4,7 @@ alias_dir = {"forward": DIR_FORWARD, "ahead": DIR_FORWARD, "back": DIR_BACKWARD,
 
 ignore_words = ["the", "to", "at", "and", "with", "a", "an"]
 
-commands = ["wait", "look", "get", "take", "drop", "leave", "pull", "examine", "open", "close", "smell", "go", "move", "turn", "face", "quit"]
+commands = ["wait", "look", "use", "get", "take", "drop", "leave", "pull", "examine", "open", "close", "smell", "go", "move", "turn", "face", "quit"]
 
 # parser
 PARSE_SUBJECTS = "subjects"
@@ -44,20 +44,20 @@ PARSE_ANY = "fallback"
 transitions = {}
 transitions[PARSE_START] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_DONE),
                             "wait":((None, ACTION_WAIT), PARSE_DONE),
-                            "look":((ENV_APPEAR, ACTION_EXAMINE), PARSE_LOOK),
-                            "get": ((PARSE_ERROR, ACTION_TAKE), PARSE_ITEM),
-                            "take":((PARSE_ERROR, ACTION_TAKE), PARSE_ITEM),
-                            "drop":((PARSE_ERROR, ACTION_DROP), PARSE_ITEM),
-                            "leave":((PARSE_ERROR, ACTION_DROP), PARSE_ITEM),
-                            "use":((PARSE_ERROR, ACTION_USE), PARSE_ITEM),
-                            "examine":((PARSE_ERROR, ACTION_EXAMINE), PARSE_LOOK),
-                            "open":((PARSE_ERROR, ACTION_OPEN), PARSE_ITEM),
-                            "close":((PARSE_ERROR, ACTION_CLOSE), PARSE_ITEM),
+                            "look":((None, ACTION_EXAMINE), PARSE_LOOK),
+                            "get": ((None, ACTION_TAKE), PARSE_ITEM),
+                            "take":((None, ACTION_TAKE), PARSE_ITEM),
+                            "drop":((None, ACTION_DROP), PARSE_ITEM),
+                            "leave":((None, ACTION_DROP), PARSE_ITEM),
+                            "use":((None, ACTION_USE), PARSE_ITEM),
+                            "examine":((None, ACTION_EXAMINE), PARSE_LOOK),
+                            "open":((None, ACTION_OPEN), PARSE_ITEM),
+                            "close":((None, ACTION_CLOSE), PARSE_ITEM),
                             "smell":((ENV_SMELL, ACTION_EXAMINE), PARSE_DONE),
-                            "go":((PARSE_ERROR, ACTION_MOVE), PARSE_MOVE),
-                            "move":((PARSE_ERROR, ACTION_MOVE), PARSE_MOVE),
-                            "face":((PARSE_ERROR, ACTION_TURN), PARSE_TURN),
-                            "turn":((PARSE_ERROR, ACTION_TURN), PARSE_TURN)}
+                            "go":((None, ACTION_MOVE), PARSE_MOVE),
+                            "move":((None, ACTION_MOVE), PARSE_MOVE),
+                            "face":((None, ACTION_TURN), PARSE_TURN),
+                            "turn":((None, ACTION_TURN), PARSE_TURN)}
 
 transitions[PARSE_MOVE] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_DONE)}
 transitions[PARSE_LOOK] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_EXAMINE), PARSE_DONE),
@@ -67,6 +67,8 @@ transitions[PARSE_ITEM] = {PARSE_USE_NOUN:((PARSE_USE_NOUN, PARSE_UNCHANGED), PA
 transitions[PARSE_TURN] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_TURN), PARSE_DONE)}
 
 transitions[PARSE_IGNORE] = {PARSE_ANY:((PARSE_UNCHANGED, PARSE_UNCHANGED), PARSE_IGNORE)}
+
+#in future we will need a lexer before, to convert 2-word names into recognizable tokens
 
 class ParserFSM(object):
     
@@ -97,7 +99,7 @@ class ParserFSM(object):
                 #print state_info
                 if (state_action != PARSE_UNCHANGED):
                     self.output[PARSE_ACTION] = state_action
-                if (state_subj != PARSE_UNCHANGED):
+                if state_subj is not None and state_subj != PARSE_UNCHANGED:
                     if state_subj == PARSE_USE_DIR:
                         dir = alias_dir[word]
                         self.output[PARSE_SUBJECTS] = [dir] 

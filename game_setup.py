@@ -40,7 +40,6 @@ candle = Candle()
 class SprayCan(Item):
     def __init__(self, name=OBJ_WD40):
         super (SprayCan, self).__init__(name)
-        self.name = OBJ_WD40
         self.uses = 3
 
     def descr(self):
@@ -102,7 +101,14 @@ class Window(Item):
         else:
             display("You nearly strain yourself trying to open the window, but it seems sealed shut.")
     
-        
+oven = Item(OBJ_OVEN)
+oven.contents.append(key)
+oven.is_portable = False
+
+compass = Item(OBJ_COMPASS)
+door = Item(OBJ_DOOR)   
+door.is_portable = False     
+
 # set up the map! i was tempted to make some impossible topology... but why hurt myself?
 
 kitchen = Room(RM_KITCHEN)
@@ -114,17 +120,24 @@ foyer = Room(RM_FOYER)
 living_room = Room(RM_LIVING)
 
 living_room.exits = {DIR_SOUTH: kitchen, DIR_EAST: foyer}
+living_room.place_object(candle)
 
 kitchen.exits = {DIR_NORTH: living_room, DIR_EAST: bathroom}
+kitchen.place_object(cleaver)
+kitchen.place_object(grindstone)
 
 bathroom.exits = {DIR_WEST: kitchen, DIR_NORTH: closet, DIR_EAST: bedroom}
+bathroom.place_object(can_VC60)
 
 closet.exits = {DIR_SOUTH: bathroom}
+closet.place_object(compass)
 
 bedroom.exits = {DIR_WEST: bathroom, DIR_NORTH: foyer}
+bedroom.place_object(lighter)
 
 foyer.exits = {DIR_WEST: living_room, DIR_SOUTH: bedroom, DIR_UP: attic}
 foyer.place_object(dresser)
+foyer.place_object(door) #TBD - interaction btwn dresser and door
 
 attic.exits = {DIR_DOWN: foyer}
 
@@ -133,8 +146,14 @@ attic.exits = {DIR_DOWN: foyer}
 windows = []
 right_window = None
 
-for room in [kitchen, bathroom, bedroom, closet, attic, foyer, living_room]:
+for room in [kitchen, bathroom, bedroom, living_room]:
     w = Window()
     room.place_object(w)
     if room.name == RM_LIVING:
         main_window = w
+
+object_map = {}
+for o in [key, candle, cleaver, dresser, grindstone, lighter, oven, can_VC60, note, compass, door, oven]:
+    object_map[o.name]=o
+
+
