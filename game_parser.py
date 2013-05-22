@@ -94,10 +94,8 @@ class ParserFSM(object):
             keyword = word
             if word in alias_dir:
                 keyword = PARSE_USE_DIR
-            elif word in object_names:
+            elif word in object_names or word == PARSE_MONSTER:
                 keyword = PARSE_USE_NOUN
-            elif word == PARSE_MONSTER:
-                pass
             else:
                 if word in alias_comm:
                     keyword = alias_comm[word]

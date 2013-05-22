@@ -1,4 +1,3 @@
-from random import randrange
 from game_constants import *
 
 class Player(object):
@@ -102,7 +101,10 @@ class Room(object):
             s = "You are in the "+self.name +"."
             s += (" You see here: "+object_list_text(self.objects)+".")
             if monster.is_nearby(player):
-                s += " You hear a faint scratching."
+                if monster.current_room != player.current_room:
+                    s += " You hear a faint scratching."
+                else:
+                    s += " There is a monster here, glaring at you. Maybe you should leave."
             if gas_conc > 0.1:
                 s += " You smell something strange."
         elif aspect == ENV_SMELL:
@@ -175,29 +177,24 @@ class Item(object):
 class Monster(object):
     def __init__(self):
         self.is_dead = False
-        self.is_trapped = False
-        self.is_hiding = False
         self.is_attacking = False
         self.current_room = None
+        self.burnt_turns = 0 # takes some turns to heal after being burnt
+        self.just_moved = False # give the player a beat to get away from the monster!
 
     def describe(self, player=None):
         display("It's big, it has very sharp teeth and claws, it has a lot of fur, and it is making you very uncomfortable.")
 
-    # TODO
-        # if it's in the bathroom or kitchen, hide in the closet
-        # if it's in the living room or foyer, hide in the attic
-        # if it's in the bedroom, pick one
-
-        # if it's already hiding, return false
-
-    def hide(self):
-        if self.is_hiding:
-            return False
-        self.hiding = True
-        return True
+    def move_to(self, new_room):
+        if not self.just_moved:
+            self.is_attacking = False
+            self.just_moved = True
+            self.current_room = new_room
+        else:
+            self.just_moved = False
 
     def is_nearby(self, player):
-        if player is not None and self.current_room in player.current_room.exits.values():
+        if player is not None and (self.current_room in player.current_room.exits.values()):
             return True
         return False
     

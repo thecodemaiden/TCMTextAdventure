@@ -84,7 +84,7 @@ class Window(Item):
         super(Window, self).__init__(name)
         self.is_portable = False
 
-    def describe(self):
+    def describe(self, player=None):
         display("You see a window. "+self.descr())
 
     def descr(self):
@@ -100,10 +100,24 @@ class Window(Item):
             display("The window comes open, with some effort.")
         else:
             display("You nearly strain yourself trying to open the window, but it seems sealed shut.")
+
+    def close(self, player=None):
+        if self.is_open:
+            display("You close the window.")
+            self.is_open = False
+        else:
+            display("The window is already closed!")
+
+class Oven(Item):
+    def __init__(self, name=OBJ_OVEN):
+        super(Oven, self).__init__(name)
+        self.is_portable = False
+        self.is_on = True
+
     
-oven = Item(OBJ_OVEN)
+    
+oven = Oven()
 oven.contents.append(key)
-oven.is_portable = False
 
 compass = Item(OBJ_COMPASS)
 door = Item(OBJ_DOOR)   
@@ -144,7 +158,7 @@ attic.exits = {DIR_DOWN: foyer}
 
 # now for the windows
 windows = []
-right_window = None
+main_window = None
 
 for room in [kitchen, bathroom, bedroom, living_room]:
     w = Window()
