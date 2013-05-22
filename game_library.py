@@ -114,7 +114,6 @@ class Room(object):
         return s
 
     def onEntered(self, player, monster):
-        print self.objects
         display(self.get_description(ENV_APPEAR, player, monster))
         display(self.list_exits(not player.has_compass(), player.facing, player.found_trapdoor))
 		
@@ -169,6 +168,7 @@ class Item(object):
             player.inventory.remove(self)
             player.current_room.place_object(self)
             self.in_inv = False
+            display("You drop the "+self.name+".")
         except ValueError:
             display("You weren't carrying that!")
         
@@ -180,12 +180,16 @@ class Monster(object):
         self.is_attacking = False
         self.current_room = None
 
+    def describe(self, player=None):
+        display("It's big, it has very sharp teeth and claws, it has a lot of fur, and it is making you very uncomfortable.")
+
     # TODO
         # if it's in the bathroom or kitchen, hide in the closet
         # if it's in the living room or foyer, hide in the attic
         # if it's in the bedroom, pick one
 
         # if it's already hiding, return false
+
     def hide(self):
         if self.is_hiding:
             return False
