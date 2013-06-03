@@ -12,3 +12,8 @@ A: I started out doing old-style underscore separated variable names, and now I'
 
 Q: How do I play?   
 A: python txt_adv.py - Make sure all the other files are in the same directory.
+
+TODOs:
+
+    * Make a World object, instead of passing Player, Monster and Item objects around inconsistently
+    * Package a binary for Windows, Mac OS X, and Unix each, to prevent cheating by reading the source

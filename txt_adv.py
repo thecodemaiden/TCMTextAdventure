@@ -113,7 +113,11 @@ def use_items(items):
         display ("... What?")
         return False
     else:
-        display(object_list_text(item_objs)) 
+        if gas_conc >= 1.5:
+            # BOOM?
+            if OBJ_LIGHTER in items:
+                player.die_now("As you click the lighter on, you hear a loud whooshing, and the room erupts in flame.")
+        
         return True
 
 def do_tick():
@@ -121,9 +125,12 @@ def do_tick():
     global gas_conc
     global main_window
     old_conc = gas_conc
-    if main_window.is_open:
-        gas_conc *= 0.85
-    else:
+    if main_window.is_open and oven.is_on:
+        # window is open & oven is on OR window is closed and oven is off
+        pass
+    elif main_window.is_open and not oven.is_on:
+        gas_conc *= 0.8
+    elif not main_window.is_open and oven.is_on:
         gas_conc *= 1.005
     if (old_conc < 1.5 and gas_conc >= 1.5) or (old_conc >= 1.5 and gas_conc < 1.5):
         look(ENV_SMELL)
@@ -194,11 +201,12 @@ while 1:
         else:
             display("I didn't quite get that. I can handle: "+", ".join(commands)+".")
     elif next_action[PARSE_ACTION] is None:
-        continue # don't tick any time away unless we explicitly waited
+        tick = False
     else:
         verb = next_action[PARSE_ACTION]
         if verb == ACTION_INVENTORY:
             display("You have: " + object_list_text(player.inventory))
+            tick = False
         elif verb == ACTION_WAIT:
             pass
         elif verb == ACTION_MOVE:
@@ -206,6 +214,7 @@ while 1:
         elif verb == ACTION_TURN:
             tick = turn(next_action[PARSE_SUBJECTS][0])
         elif verb == ACTION_EXAMINE:
+            tick = False
             tick = descr_all(next_action[PARSE_SUBJECTS])
         elif verb == ACTION_TAKE or verb == ACTION_DROP or verb == ACTION_OPEN or verb == ACTION_CLOSE:
             tick = items_do_all(next_action[PARSE_SUBJECTS], verb)

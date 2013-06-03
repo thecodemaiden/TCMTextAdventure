@@ -1,7 +1,7 @@
 from game_library import Room, Item
 from game_constants import *
 
-# the candle is a very special object
+# the candle is a special object
 class Candle(Item):
     def __init__(self, name=OBJ_CANDLE):
         super (Candle, self).__init__(name)
@@ -18,14 +18,18 @@ class Candle(Item):
 
     def use(self, player, others=[]):
         lighter = [x for x in others if x.name == OBJ_LIGHTER]
-        if len(lighter) > 0:
-            if self.lit:
+        if self.lit:
+            if len(lighter) > 0:
                 display("The candle is already lit!")
             else:
+                self.lit = False
+                display("You put out the candle.")
+        else:
+            if len(lighter) > 0:
                 display("You use the lighter to light the candle.")
                 self.lit = True
-        else:
-                display("What can you light the candle with?")
+            else:
+                display("What will you light the candle with?")
 
     def descr(self):
         if self.lit:
@@ -58,31 +62,39 @@ class SprayCan(Item):
         else:
             display("You press the button on the can, but there seems to be no spray left.")
  
-            
-
 can_VC60 = SprayCan()
+
+cleaver = Item(OBJ_CLEAVER)
 
 key = Item(OBJ_KEY)
 
 note = Item(OBJ_NOTE)
-note.description = "The note says 'YZZYX'"
+note.description = "It reads 'YZZYX'"
 
 dresser = Item(OBJ_DRESSER)
 dresser.is_portable = False
+dresser.can_open = True
 dresser.contents.append(note)
 dresser.is_open = False
+dresser.is_broken = False
 
 grindstone = Item(OBJ_GRINDSTONE)
 grindstone.is_portable = False
+grindstone.description = "It looks a little worn, and very heavy."
 
 lighter = Item(OBJ_LIGHTER)
-cleaver = Item(OBJ_CLEAVER)
+lighter.description = "A small red cigarette lighter."
+
+
+compass = Item(OBJ_COMPASS)
+compass.description = "A tiny magnetic compass. It seems to be working."
 
 #the window depends on where it is!
 class Window(Item):
     def __init__(self, name=OBJ_WINDOW):
         super(Window, self).__init__(name)
         self.is_portable = False
+        self.can_open = True
 
     def describe(self, player=None):
         display("You see a window. "+self.descr())
@@ -108,18 +120,32 @@ class Window(Item):
         else:
             display("The window is already closed!")
 
+    def use(self, player=None):
+        if self.is_open:
+            self.close(player)
+        else:
+            self.open(player)
+
 class Oven(Item):
     def __init__(self, name=OBJ_OVEN):
         super(Oven, self).__init__(name)
         self.is_portable = False
         self.is_on = True
 
-    
+    def use(self, player=None):
+        word = ''
+        if self.is_on:
+            self.is_on = False
+            word = 'off'
+        else:
+            self.is_on = True
+            word = 'on'
+        display('The oven is now '+word+'.')
+
     
 oven = Oven()
 oven.contents.append(key)
 
-compass = Item(OBJ_COMPASS)
 door = Item(OBJ_DOOR)   
 door.is_portable = False     
 

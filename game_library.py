@@ -127,6 +127,7 @@ class Item(object):
         self.name = name
         self.is_portable = True
         self.is_open = False
+        self.can_open = False
         self.contents = []
 
     def use(self, player=None, others=[]):
@@ -143,10 +144,24 @@ class Item(object):
         return "There is nothing special about this "+self.name+"."
 
     def open(self, player=None):
-        display("You can't open that!")
+        if self.can_open:
+            if self.is_open:
+                display("The "+self.name+" is already open!")
+            else:
+                self.is_open = True
+                display("You open the "+self.name+".")
+        else:
+            display("You can't open that!")
 
     def close(self, player=None):
-        display("You can't close that!")
+        if self.can_open:
+            if not self.is_open:
+                display("The "+self.name+" is already closed!")
+            else:
+                self.is_open = False
+                display("You close the "+self.name+".")
+        else:
+            display("You can't close that!")
 
     def pickup(self, player):
         if player.current_room != self.current_room:

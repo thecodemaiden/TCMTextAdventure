@@ -29,6 +29,7 @@ ACTION_MOVE = "move"
 ACTION_USE = "use"
 ACTION_INVENTORY = "inventory"
 ACTION_QUIT = "quit"
+ACTION_MAGIC = "yzzyx"
 
 PARSE_USE_NOUN = "LOOKUP_N"
 PARSE_USE_DIR = "LOOKUP_D"
@@ -60,7 +61,8 @@ transitions[PARSE_START] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_D
                             "go":((None, ACTION_MOVE), PARSE_MOVE),
                             "turn":((None, ACTION_TURN), PARSE_TURN),
                             "quit":((None, ACTION_QUIT), PARSE_IGNORE),
-                            "stuff":((None, ACTION_INVENTORY), PARSE_DONE) 
+                            "stuff":((None, ACTION_INVENTORY), PARSE_DONE), 
+                            "yzzyx":((None, ACTION_MAGIC), PARSE_IGNORE)
                             }
 
 transitions[PARSE_MOVE] = {PARSE_USE_DIR:((PARSE_USE_DIR, ACTION_MOVE), PARSE_DONE)}
@@ -92,15 +94,14 @@ class ParserFSM(object):
         if word not in ignore_words:
             parse_dict = transitions[self.state]
             keyword = word
-            if word in alias_dir:
+            if self.state == PARSE_IGNORE:
+                keyword = PARSE_ANY
+            elif word in alias_dir:
                 keyword = PARSE_USE_DIR
             elif word in object_names or word == PARSE_MONSTER:
                 keyword = PARSE_USE_NOUN
-            else:
-                if word in alias_comm:
+            elif word in alias_comm:
                     keyword = alias_comm[word]
-                if keyword not in commands:
-                    keyword = PARSE_ANY
             try:
                 state_info = parse_dict[keyword]
                 next_state = state_info[1]
