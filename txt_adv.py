@@ -113,7 +113,7 @@ def use_items(items):
         display ("... What?")
         return False
     else:
-        if gas_conc >= 1.5:
+        if gas_conc >= 1.6:
             # BOOM?
             if OBJ_LIGHTER in items:
                 player.die_now("As you click the lighter on, you hear a loud whooshing, and the room erupts in flame.")
@@ -135,6 +135,9 @@ def do_tick():
     if (old_conc < 1.5 and gas_conc >= 1.5) or (old_conc >= 1.5 and gas_conc < 1.5):
         look(ENV_SMELL)
 
+    # also, explode if the gas conc is high and the candle is lit
+    if (candle.lit and gas_conc >= 1.6):
+        candle_room = 
     # monster hides from lit candle
     hide_monster = False
     can_see_monster = monster.current_room == player.current_room
@@ -181,6 +184,7 @@ def do_tick():
         monster.move_to(new_room)
         if monster.is_nearby(player):
             display("You hear a scratching sound.")
+
         
            
 while 1:
@@ -238,4 +242,4 @@ if player.is_dead:
 elif player.is_escaped:
 	display("You have escaped!")
 else:
-	print "Quitter!"
+	display("Goodbye...")
